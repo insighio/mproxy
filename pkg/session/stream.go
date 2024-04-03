@@ -54,7 +54,7 @@ func stream(ctx context.Context, dir Direction, r, w net.Conn, h Handler, ic Int
 	for {
 		// Read from one connection.
 		pkt, err := packets.ReadPacket(r)
-		logger.Warn("ReadPacket: Received new packet")
+		logger.Warn("ReadPacket: Received new packet. Type: %T", pkt)
 		if err != nil {
 			errs <- wrap(ctx, err, dir)
 			return
