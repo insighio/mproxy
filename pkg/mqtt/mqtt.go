@@ -64,7 +64,7 @@ func (p Proxy) handle(ctx context.Context, inbound net.Conn) {
 		return
 	}
 
-	if err = session.Stream(ctx, inbound, outbound, p.handler, p.interceptor, clientCert); err != io.EOF {
+	if err = session.Stream(ctx, inbound, outbound, p.handler, p.interceptor, clientCert, p.logger); err != io.EOF {
 		p.logger.Warn(err.Error())
 	}
 }

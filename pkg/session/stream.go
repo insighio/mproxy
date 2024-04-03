@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 
 	"github.com/eclipse/paho.mqtt.golang/packets"
@@ -29,15 +30,15 @@ var (
 )
 
 // Stream starts proxy between client and broker.
-func Stream(ctx context.Context, in, out net.Conn, h Handler, ic Interceptor, cert x509.Certificate) error {
+func Stream(ctx context.Context, in, out net.Conn, h Handler, ic Interceptor, cert x509.Certificate, logger *slog.Logger) error {
 	s := Session{
 		Cert: cert,
 	}
 	ctx = NewContext(ctx, &s)
 	errs := make(chan error, 2)
 
-	go stream(ctx, Up, in, out, h, ic, errs)
-	go stream(ctx, Down, out, in, h, ic, errs)
+	go stream(ctx, Up, in, out, h, ic, errs, logger)
+	go stream(ctx, Down, out, in, h, ic, errs, logger)
 
 	// Handle whichever error happens first.
 	// The other routine won't be blocked when writing
@@ -49,10 +50,11 @@ func Stream(ctx context.Context, in, out net.Conn, h Handler, ic Interceptor, ce
 	return errors.Join(err, disconnectErr)
 }
 
-func stream(ctx context.Context, dir Direction, r, w net.Conn, h Handler, ic Interceptor, errs chan error) {
+func stream(ctx context.Context, dir Direction, r, w net.Conn, h Handler, ic Interceptor, errs chan error, logger *slog.Logger) {
 	for {
 		// Read from one connection.
 		pkt, err := packets.ReadPacket(r)
+		logger.Warn("ReadPacket: Received new packet")
 		if err != nil {
 			errs <- wrap(ctx, err, dir)
 			return
