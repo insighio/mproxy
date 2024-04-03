@@ -70,6 +70,7 @@ func (p Proxy) handle() http.Handler {
 
 func (p Proxy) pass(ctx context.Context, in *websocket.Conn) {
 	defer in.Close()
+	p.logger.Error("Test log")
 
 	websocketURL := url.URL{
 		Scheme: p.scheme,
