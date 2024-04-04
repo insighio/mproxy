@@ -52,6 +52,12 @@ func Stream(ctx context.Context, in, out net.Conn, h Handler, ic Interceptor, ce
 
 func stream(ctx context.Context, dir Direction, r, w net.Conn, h Handler, ic Interceptor, errs chan error, logger *slog.Logger) {
 	for {
+		if ctx.Err() != nil {
+			logger.Warn("Context error before reading packet", ctx.Err())
+			// Log the error
+			errs <- wrap(ctx, ctx.Err(), dir)
+			return
+		}
 		// Read from one connection.
 		pkt, err := packets.ReadPacket(r)
 		logger.Warn("ReadPacket: Received new packet. Type: %T", pkt)
