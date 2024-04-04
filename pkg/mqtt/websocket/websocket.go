@@ -64,6 +64,12 @@ func (p Proxy) handle() http.Handler {
 			return
 		}
 
+		p.logger.Info("Upgraded connection, starting go routine to pass traffic")
+		ctx := r.Context()
+		if ctx.Err() != nil {
+			p.logger.Warn("Context error just after upgrading connection", slog.Any("error", ctx.Err()))
+			return
+		}
 		go p.pass(r.Context(), cconn)
 	})
 }
