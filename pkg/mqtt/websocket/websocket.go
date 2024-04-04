@@ -70,7 +70,7 @@ func (p Proxy) handle() http.Handler {
 			p.logger.Warn("Context error just after upgrading connection", slog.Any("error", ctx.Err()))
 			return
 		}
-		go p.pass(r.Context(), cconn)
+		go p.pass(ctx, cconn)
 	})
 }
 
