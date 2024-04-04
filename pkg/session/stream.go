@@ -60,12 +60,29 @@ func stream(ctx context.Context, dir Direction, r, w net.Conn, h Handler, ic Int
 			return
 		}
 
+		if ctx.Err() != nil {
+			logger.Warn("Context error after reading packet")
+			// Log the error
+			errs <- wrap(ctx, ctx.Err(), dir)
+			return
+		}
+
 		if dir == Up {
+			logger.Warn("Upstream packet")
 			if err = authorize(ctx, pkt, h); err != nil {
+				logger.Warn("Something went wrong with authorization")
 				errs <- wrap(ctx, err, dir)
 				return
 			}
+
+			if ctx.Err() != nil {
+				logger.Warn("Context error after authorization")
+				// Log the error
+				errs <- wrap(ctx, ctx.Err(), dir)
+				return
+			}
 		}
+
 		if ic != nil {
 			pkt, err = ic.Intercept(ctx, pkt, dir)
 			if err != nil {
