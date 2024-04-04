@@ -271,6 +271,23 @@ func loadConfig() config {
 }
 
 func proxyMQTTWS(cfg WSMQTTConfig, logger *slog.Logger, handler session.Handler, errs chan error) {
+	// Log cfg
+	logger.Info("Starting MQTT WS proxy",
+		slog.Group("server",
+			slog.String("host", cfg.host),
+			slog.String("port", cfg.port),
+			slog.String("path", cfg.path),
+		),
+		slog.Group("WSS",
+			slog.String("wssPort", cfg.wssPort),
+			slog.String("wssPath", cfg.wssPath),
+		),
+		slog.Group("target",
+			slog.String("host", cfg.targetHost),
+			slog.String("port", cfg.targetPort),
+			slog.String("path", cfg.targetPath),
+		),
+	)
 	target := fmt.Sprintf("%s:%s", cfg.targetHost, cfg.targetPort)
 	wp := websocket.New(target, cfg.targetPath, cfg.targetScheme, handler, nil, logger)
 	http.Handle(cfg.path, wp.Handler())
