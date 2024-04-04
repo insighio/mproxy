@@ -72,6 +72,11 @@ func (p Proxy) pass(ctx context.Context, in *websocket.Conn) {
 	defer in.Close()
 	p.logger.Info("Test log")
 
+	if ctx.Err() != nil {
+		p.logger.Warn("Context error just at the start of pass", slog.Any("error", ctx.Err()))
+		return
+	}
+
 	websocketURL := url.URL{
 		Scheme: p.scheme,
 		Host:   p.target,
@@ -84,6 +89,11 @@ func (p Proxy) pass(ctx context.Context, in *websocket.Conn) {
 	srv, _, err := dialer.Dial(websocketURL.String(), nil)
 	if err != nil {
 		p.logger.Error("Unable to connect to broker", slog.Any("error", err))
+		return
+	}
+
+	if ctx.Err() != nil {
+		p.logger.Warn("Context error after connecting to broker", slog.Any("error", ctx.Err()))
 		return
 	}
 
