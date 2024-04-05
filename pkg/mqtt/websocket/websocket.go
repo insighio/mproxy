@@ -64,24 +64,12 @@ func (p Proxy) handle() http.Handler {
 			return
 		}
 
-		p.logger.Info("Upgraded connection, starting go routine to pass traffic")
-		ctx := context.Background()
-		if ctx.Err() != nil {
-			p.logger.Warn("Context error just after upgrading connection", slog.Any("error", ctx.Err()))
-			return
-		}
-		go p.pass(ctx, cconn)
+		go p.pass(context.Background(), cconn)
 	})
 }
 
 func (p Proxy) pass(ctx context.Context, in *websocket.Conn) {
 	defer in.Close()
-	p.logger.Info("Test log")
-
-	if ctx.Err() != nil {
-		p.logger.Warn("Context error just at the start of pass", slog.Any("error", ctx.Err()))
-		return
-	}
 
 	websocketURL := url.URL{
 		Scheme: p.scheme,
@@ -98,11 +86,6 @@ func (p Proxy) pass(ctx context.Context, in *websocket.Conn) {
 		return
 	}
 
-	if ctx.Err() != nil {
-		p.logger.Warn("Context error after connecting to broker", slog.Any("error", ctx.Err()))
-		return
-	}
-
 	errc := make(chan error, 1)
 	inboundConn := newConn(in)
 	outboundConn := newConn(srv)
@@ -113,11 +96,6 @@ func (p Proxy) pass(ctx context.Context, in *websocket.Conn) {
 	clientCert, err := mptls.ClientCert(in.UnderlyingConn())
 	if err != nil {
 		p.logger.Error("Failed to get client certificate", slog.Any("error", err))
-		return
-	}
-
-	if err = ctx.Err(); err != nil {
-		p.logger.Warn("Context error before starting proxy", slog.Any("error", err))
 		return
 	}
 
