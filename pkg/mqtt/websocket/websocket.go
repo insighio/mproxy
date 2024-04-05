@@ -68,9 +68,10 @@ func (p Proxy) handle() http.Handler {
 		go func() {
 			defer cancel() // Cancel the context when the goroutine finishes
 			p.pass(ctx, cconn)
-			if err := ctx.Err(); err != nil {
-				p.logger.Info("Context error at the end of goroutine", slog.Any("error", err))
-			} else {
+			select {
+			case <-ctx.Done():
+				p.logger.Info("Context cancelled at the end of goroutine", slog.Any("error", ctx.Err()))
+			default:
 				p.logger.Info("Context still active at the end of goroutine")
 			}
 		}()
