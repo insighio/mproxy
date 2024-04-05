@@ -64,7 +64,7 @@ func (p Proxy) handle() http.Handler {
 			return
 		}
 
-		go p.pass(context.Background(), cconn)
+		go p.pass(r.Context(), cconn)
 	})
 }
 
