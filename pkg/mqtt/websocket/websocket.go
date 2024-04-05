@@ -64,7 +64,15 @@ func (p Proxy) handle() http.Handler {
 			return
 		}
 
-		go p.pass(r.Context(), cconn)
+		ctx := context.Background() // Create a new context
+		go func() {
+			p.pass(ctx, cconn)
+			if err := ctx.Err(); err != nil {
+				p.logger.Info("Context error at the end of goroutine", slog.Any("error", err))
+			} else {
+				p.logger.Info("Context still active at the end of goroutine")
+			}
+		}()
 	})
 }
 
