@@ -64,12 +64,16 @@ func (p Proxy) handle() http.Handler {
 			return
 		}
 
-		go p.pass(context.WithoutCancel(r.Context()), cconn)
+		go p.pass(cconn)
 	})
 }
 
-func (p Proxy) pass(ctx context.Context, in *websocket.Conn) {
+func (p Proxy) pass(in *websocket.Conn) {
 	defer in.Close()
+	// Using a new context so as to avoiding infinitely long traces.
+	// And also avoiding proxy cancellation due to parent context cancellation.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	websocketURL := url.URL{
 		Scheme: p.scheme,
