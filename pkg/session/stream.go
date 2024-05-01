@@ -13,6 +13,7 @@ import (
 	"net"
 
 	"github.com/eclipse/paho.mqtt.golang/packets"
+	"github.com/google/uuid"
 )
 
 type Direction int
@@ -101,6 +102,15 @@ func authorize(ctx context.Context, pkt packets.ControlPacket, h Handler) error 
 			s.ID = p.ClientIdentifier
 			s.Username = p.Username
 			s.Password = p.Password
+		}
+
+		// If the client ID is empty, generate a random one.
+		if s.ID == "" {
+			id, err := uuid.NewUUID()
+			if err != nil {
+				return err
+			}
+			s.ID = id.String()
 		}
 
 		ctx = NewContext(ctx, s)
