@@ -103,7 +103,7 @@ func (p Proxy) pass(in *websocket.Conn) {
 		return
 	}
 
-	err = session.Stream(ctx, inboundConn, outboundConn, p.handler, p.interceptor, clientCert, p.logger)
+	err = session.Stream(ctx, inboundConn, outboundConn, p.handler, p.interceptor, clientCert)
 	errc <- err
 	p.logger.Warn("Broken connection for client", slog.Any("error", err))
 }

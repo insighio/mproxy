@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 
 	"github.com/eclipse/paho.mqtt.golang/packets"
@@ -31,15 +30,15 @@ var (
 )
 
 // Stream starts proxy between client and broker.
-func Stream(ctx context.Context, in, out net.Conn, h Handler, ic Interceptor, cert x509.Certificate, logger *slog.Logger) error {
+func Stream(ctx context.Context, in, out net.Conn, h Handler, ic Interceptor, cert x509.Certificate) error {
 	s := Session{
 		Cert: cert,
 	}
 	ctx = NewContext(ctx, &s)
 	errs := make(chan error, 2)
 
-	go stream(ctx, Up, in, out, h, ic, errs, logger)
-	go stream(ctx, Down, out, in, h, ic, errs, logger)
+	go stream(ctx, Up, in, out, h, ic, errs)
+	go stream(ctx, Down, out, in, h, ic, errs)
 
 	// Handle whichever error happens first.
 	// The other routine won't be blocked when writing
@@ -51,11 +50,10 @@ func Stream(ctx context.Context, in, out net.Conn, h Handler, ic Interceptor, ce
 	return errors.Join(err, disconnectErr)
 }
 
-func stream(ctx context.Context, dir Direction, r, w net.Conn, h Handler, ic Interceptor, errs chan error, logger *slog.Logger) {
+func stream(ctx context.Context, dir Direction, r, w net.Conn, h Handler, ic Interceptor, errs chan error) {
 	for {
 		// Read from one connection.
 		pkt, err := packets.ReadPacket(r)
-		logger.Warn(fmt.Sprintf("ReadPacket: Received %s new packet. Type: %T", fmt.Sprint(dir), pkt))
 		if err != nil {
 			errs <- wrap(ctx, err, dir)
 			return
@@ -63,7 +61,6 @@ func stream(ctx context.Context, dir Direction, r, w net.Conn, h Handler, ic Int
 
 		if dir == Up {
 			if err = authorize(ctx, pkt, h); err != nil {
-				logger.Warn(fmt.Sprintf("Authorize returned error: %s", err.Error()))
 				errs <- wrap(ctx, err, dir)
 				return
 			}
@@ -79,7 +76,6 @@ func stream(ctx context.Context, dir Direction, r, w net.Conn, h Handler, ic Int
 
 		// Send to another.
 		if err := pkt.Write(w); err != nil {
-			logger.Warn(fmt.Sprintf("Write returned error: %s", err.Error()))
 			errs <- wrap(ctx, err, dir)
 			return
 		}
@@ -87,7 +83,6 @@ func stream(ctx context.Context, dir Direction, r, w net.Conn, h Handler, ic Int
 		// Notify only for packets sent from client to broker (incoming packets).
 		if dir == Up {
 			if err := notify(ctx, pkt, h); err != nil {
-				logger.Warn(fmt.Sprintf("Notify returned error: %s", err.Error()))
 				errs <- wrap(ctx, err, dir)
 			}
 		}
