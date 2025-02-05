@@ -80,11 +80,8 @@ func stream(ctx context.Context, dir Direction, r, w net.Conn, h Handler, ic Int
 			return
 		}
 
-		// Notify only for packets sent from client to broker (incoming packets).
-		if dir == Up {
-			if err := notify(ctx, pkt, h); err != nil {
-				errs <- wrap(ctx, err, dir)
-			}
+		if err := notify(ctx, pkt, h); err != nil {
+			errs <- wrap(ctx, err, dir)
 		}
 	}
 }
