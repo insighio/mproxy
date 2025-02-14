@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 
 	"github.com/eclipse/paho.mqtt.golang/packets"
 	"github.com/google/uuid"
@@ -80,8 +81,23 @@ func stream(ctx context.Context, dir Direction, r, w net.Conn, h Handler, ic Int
 			return
 		}
 
-		if err := notify(ctx, pkt, h); err != nil {
-			errs <- wrap(ctx, err, dir)
+		// Notify only for packets sent from client to broker (incoming packets).
+		if dir == Up {
+			if err := notify(ctx, pkt, h); err != nil {
+				errs <- wrap(ctx, err, dir)
+			}
+		} else {
+			if p, ok := pkt.(*packets.PublishPacket); ok {
+				fmt.Println("TopicName: ", p.TopicName)
+				if strings.HasSuffix(p.TopicName, "connStat") {
+					fmt.Println("notify connStat")
+					if err := notify(ctx, pkt, h); err != nil {
+						errs <- wrap(ctx, err, dir)
+					}
+				} else {
+					fmt.Println("not notify connStat")
+				}
+			}
 		}
 	}
 }
