@@ -87,15 +87,13 @@ func stream(ctx context.Context, dir Direction, r, w net.Conn, h Handler, ic Int
 				errs <- wrap(ctx, err, dir)
 			}
 		} else {
+			// For downlink messages, we only want to notify on connection status messages.
+			// This is mainly for last will messages.
 			if p, ok := pkt.(*packets.PublishPacket); ok {
-				fmt.Println("TopicName: ", p.TopicName)
 				if strings.HasSuffix(p.TopicName, "connStat") {
-					fmt.Println("notify connStat")
 					if err := notify(ctx, pkt, h); err != nil {
 						errs <- wrap(ctx, err, dir)
 					}
-				} else {
-					fmt.Println("not notify connStat")
 				}
 			}
 		}
